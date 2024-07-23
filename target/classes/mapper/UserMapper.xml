@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itheima.mp.mapper.UserMapper">
+    <insert id="saveUser" parameterType="com.itheima.mp.domain.po.User">
+        INSERT INTO `user` (`id`, `username`, `password`, `phone`, `info`, `balance`)
+        VALUES
+        (#{id}, #{username}, #{password}, #{phone}, #{info}, #{balance});
+    </insert>
+    <insert id="insertUser" parameterType="com.itheima.mp.domain.po.User">
+        insert into user(username,password,phone,info,status,balance)
+        values(#{username},#{password},#{phone},#{info},#{status},#{balance})
+    </insert>
+    <insert id="saveByBatch" parameterType="java.util.List">
+        insert into user(username,password,phone,info,status,balance,create_time,update_time)
+        <if test="userList != null and userList.size() > 0">
+            values
+            <foreach collection="userList" separator="," item="user">
+                (#{user.username},#{user.password},#{user.phone},#{user.info},
+                #{user.status},#{user.balance},#{user.createTime},#{user.updateTime})
+            </foreach>
+        </if>
+    </insert>
+    <update id="updateUser" parameterType="com.itheima.mp.domain.po.User">
+        UPDATE `user`
+        <set>
+            <if test="username != null">
+                `username`=#{username}
+            </if>
+            <if test="password != null">
+                `password`=#{password}
+            </if>
+            <if test="phone != null">
+                `phone`=#{phone}
+            </if>
+            <if test="info != null">
+                `info`=#{info}
+            </if>
+            <if test="status != null">
+                `status`=#{status}
+            </if>
+            <if test="balance != null">
+                `balance`=#{balance}
+            </if>
+        </set>
+        WHERE `id`=#{id};
+    </update>
+    <update id="updateUserBalance" parameterType="com.itheima.mp.domain.po.User">
+        update user
+        <set>
+            <if test="balance != null">
+                balance = #{balance}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateCostumSqlSegment">
+        update user
+        set balance = balance - #{balance}
+        ${ew.customSqlSegment}
+    </update>
+
+    <delete id="deleteUser" parameterType="com.itheima.mp.domain.po.User">
+        DELETE FROM user WHERE id = #{id}
+    </delete>
+
+    <select id="queryUserById" resultType="com.itheima.mp.domain.po.User">
+        SELECT *
+        FROM user
+        WHERE id = #{id}
+    </select>
+
+    <select id="queryUserByIds" resultType="com.itheima.mp.domain.po.User">
+        SELECT *
+        FROM user
+        <if test="ids != null">
+            WHERE id IN
+            <foreach collection="ids" open="(" close=")" item="id" separator=",">
+                #{id}
+            </foreach>
+        </if>
+        LIMIT 10
+    </select>
+
+</mapper>
