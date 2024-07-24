@@ -2,23 +2,31 @@ package com.itheima.mp.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.itheima.mp.domain.dto.UserFormDTO;
+import com.itheima.mp.domain.po.Address;
 import com.itheima.mp.domain.po.User;
 import com.itheima.mp.domain.query.UserQuery;
+import com.itheima.mp.domain.vo.AddressVO;
 import com.itheima.mp.domain.vo.UserVO;
 import com.itheima.mp.service.IUserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
 @Api(tags = "用户管理接口")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
     //方式一和二 字段注入
@@ -60,14 +68,36 @@ public class UserController {
     @GetMapping("/{id}")
     public UserVO getUserById(@ApiParam("用户id") @PathVariable("id") Long id) {
         User user = userService.getById(id);
-        return BeanUtil.copyProperties(user, UserVO.class);
+        UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
+        List<Address> addressList = Db.lambdaQuery(Address.class)
+                .eq(Address::getUserId, id)
+                .list();
+        userVO.setAddressVOList(BeanUtil.copyToList(addressList, AddressVO.class));
+        return userVO;
     }
 
     @ApiOperation("根据id批量查找用户接口")
     @GetMapping
     public List<UserVO> getUserByIds(@ApiParam("用户id集合") @RequestParam("idList") List<Long> idList) {
         List<User> userList = userService.listByIds(idList);
-        return BeanUtil.copyToList(userList, UserVO.class);
+        List<UserVO> userVOList = BeanUtil.copyToList(userList, UserVO.class);
+        List<Long> userIdList = userList.stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
+        List<Address> addressList = Db.lambdaQuery(Address.class)
+                .in(Address::getUserId, userIdList)
+                .list();
+        Map<Long, List<Address>> groupMap = new HashMap<>(0);
+        if (!addressList.isEmpty()) {
+            groupMap = addressList.stream().collect(Collectors.groupingBy(Address::getUserId));
+        }
+        if (!groupMap.isEmpty()) {
+            for (UserVO userVO : userVOList) {
+                List<Address> addresses = groupMap.get(userVO.getId());
+                userVO.setAddressVOList(BeanUtil.copyToList(addresses, AddressVO.class));
+            }
+        }
+        return userVOList;
     }
 
     @ApiOperation("根据id扣减余额接口")

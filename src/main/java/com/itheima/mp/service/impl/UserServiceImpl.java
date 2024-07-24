@@ -35,7 +35,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return lambdaUpdate().set(User::getBalance, balance)
                 .set(balance == 0, User::getStatus, 2)
                 .eq(User::getId, id)
-                .eq(User::getBalance, user.getBalance()) //乐观锁  余额等于查到那一刻的数据
+                .eq(User::getBalance, user.getBalance()) //乐观锁  余额等于查到那一刻的数据 防止同时进入导致只扣一次钱
                 .update();
     }
 
